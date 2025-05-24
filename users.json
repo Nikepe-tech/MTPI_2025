@@ -1,0 +1,1 @@
+[{"username":"root","password":"qwer","balance":18.019999999999982,"history":["Deposit: +0.02","Deposit: +342.0","Withdrawal: -321.0","Withdrawal: -3.0","Transfer to Mik: -3.0"]},{"username":"Mik","password":"1234","balance":0.0,"history":["Deposit: +3.0","Transfer from root: +3.0","Withdrawal: -3.0"]}]
