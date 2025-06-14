@@ -1,5 +1,6 @@
 package com.bank.storage;
 
+import com.bank.model.Transaction;
 import com.bank.model.User;
 
 import javax.json.*;
@@ -9,7 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class UserStorage {
     // Путь к файлу с пользователями
-    private static final String FILE_NAME = "C:/Users/nikit/IdeaProjects/Bank_EE/users.json";
+    private static final String FILE_NAME = "C:/Users/nikit/IdeaProjects/BankAppData/users.json";
 
     // Все пользователи хранятся тут, загружаются из файла при старте
     private static ConcurrentHashMap<String, User> users = loadUsers();
@@ -38,33 +39,28 @@ public class UserStorage {
     // Сохраняем всех пользователей в файл в виде JSON-объекта с ключами — username
     // Формат: { "user1": {...}, "user2": {...} }
     public static void saveUsers() {
-        JsonObjectBuilder rootBuilder = Json.createObjectBuilder();
-
-        for (Map.Entry<String, User> entry : users.entrySet()) {
-            User user = entry.getValue();
-
-            // Строим массив истории операций
-            JsonArrayBuilder historyBuilder = Json.createArrayBuilder();
-            for (String h : user.getHistory()) {
-                historyBuilder.add(h);
-            }
-
-            // Собираем JSON для каждого пользователя
-            JsonObject userJson = Json.createObjectBuilder()
+        JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
+        for (User user : users.values()) {
+            JsonObjectBuilder userJson = Json.createObjectBuilder()
                     .add("username", user.getUsername())
                     .add("password", user.getPassword())
-                    .add("balance", user.getBalance())
-                    .add("history", historyBuilder)
-                    .build();
+                    .add("balance", user.getBalance());
 
-            // Добавляем в корневой объект по ключу username
-            rootBuilder.add(entry.getKey(), userJson);
+            JsonArrayBuilder historyArray = Json.createArrayBuilder();
+            for (String h : user.getHistory()) {
+                historyArray.add(h);
+            }
+
+            userJson.add("history", historyArray);
+            arrayBuilder.add(userJson);
         }
 
-        // Записываем объект в файл
-        try (Writer writer = new FileWriter(FILE_NAME)) {
-            JsonWriter jsonWriter = Json.createWriter(writer);
-            jsonWriter.writeObject(rootBuilder.build());
+        JsonObject root = Json.createObjectBuilder()
+                .add("users", arrayBuilder)
+                .build();
+
+        try (JsonWriter writer = Json.createWriter(new FileWriter(FILE_NAME))) {
+            writer.writeObject(root);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -85,11 +81,14 @@ public class UserStorage {
         synchronized (users) {
             if (fromUser.getBalance() < amount) return false;
 
-            fromUser.withdraw(amount);
-            toUser.deposit(amount);
+            fromUser.setBalance(fromUser.getBalance() - amount);
+            toUser.setBalance(toUser.getBalance() + amount);
 
             fromUser.getHistory().add("Transfer to " + toUsername + ": -" + amount);
             toUser.getHistory().add("Transfer from " + fromUsername + ": +" + amount);
+
+            fromUser.addTransaction(new Transaction("TransferOut", amount, toUsername));
+            toUser.addTransaction(new Transaction("TransferIn", amount, fromUsername));
 
             saveToFile();  // сохраняем изменения
             return true;
@@ -115,10 +114,30 @@ public class UserStorage {
                 }
                 userJson.add("history", historyArray);
 
-                arrayBuilder.add(userJson);
-            }
+                JsonArrayBuilder transactionsArray = Json.createArrayBuilder();
+                for (Transaction tx : user.getTransactions()) {
+                    JsonObjectBuilder txJson = Json.createObjectBuilder()
+                            .add("type", tx.getType())
+                            .add("amount", tx.getAmount())
+                            .add("timestamp", tx.getTimestamp().toString());
 
-            jsonWriter.writeArray(arrayBuilder.build());
+                    if (tx.getTargetUser() != null) {
+                        txJson.add("targetUser", tx.getTargetUser());
+                    }
+
+                    transactionsArray.add(txJson);
+                }
+                userJson.add("transactions", transactionsArray);
+
+
+                arrayBuilder.add(userJson);
+           }
+
+            JsonObject rootObject = Json.createObjectBuilder()
+                    .add("users", arrayBuilder)
+                    .build();
+            jsonWriter.writeObject(rootObject);
+
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -164,6 +183,26 @@ public class UserStorage {
                 for (JsonValue historyVal : historyArray) {
                     user.getHistory().add(((JsonString) historyVal).getString());
                 }
+
+                JsonArray transactionsArray = userJson.getJsonArray("transactions");
+                if (transactionsArray != null) {
+                    for (JsonValue txVal : transactionsArray) {
+                        JsonObject txJson = txVal.asJsonObject();
+
+                        String type = txJson.getString("type");
+                        double amount = txJson.getJsonNumber("amount").doubleValue();
+                        String timestampStr = txJson.getString("timestamp");
+                        java.time.LocalDateTime timestamp = java.time.LocalDateTime.parse(timestampStr);
+                        String targetUser = txJson.containsKey("targetUser") ? txJson.getString("targetUser") : null;
+
+                        com.bank.model.Transaction tx = new com.bank.model.Transaction(type, amount, targetUser);
+                        tx.setTimestamp(timestamp);  // не забудь добавить setTimestamp() в Transaction.java
+
+                        user.getTransactions().add(tx);
+                    }
+                }
+
+
 
                 loadedUsers.put(username, user);
             }
