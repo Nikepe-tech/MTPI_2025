@@ -1,3 +1,8 @@
+<!--
+  Formularz do wypłaty środków z konta użytkownika.
+  Sprawdza saldo i wykonuje operację.
+-->
+
 <%@ page contentType="text/html; charset=UTF-8" %>
 
 <%

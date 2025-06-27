@@ -1,3 +1,8 @@
+/**
+ * Klasa odpowiedzialna za przechowywanie i zarządzanie użytkownikami systemu.
+ * Obsługuje logowanie, rejestrację, operacje finansowe oraz zapis/odczyt do pliku JSON.
+ */
+
 package com.bank.storage;
 
 import com.bank.model.Transaction;
@@ -5,40 +10,57 @@ import com.bank.model.User;
 
 import javax.json.*;
 import java.io.*;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class UserStorage {
-    // Путь к файлу с пользователями
-    private static final String FILE_NAME = "C:/Users/nikit/IdeaProjects/BankAppData/users.json";
+    /**
+     * Ścieżka do pliku JSON, w którym przechowywani są użytkownicy.
+     */
+    private final String FILE_NAME = "C:/Users/nikit/IdeaProjects/BankAppData/users.json";
 
-    // Все пользователи хранятся тут, загружаются из файла при старте
-    private static ConcurrentHashMap<String, User> users = loadUsers();
+    /**
+     * Mapa wszystkich użytkowników w systemie, z kluczem jako nazwa użytkownika.
+     */
+    private final ConcurrentHashMap<String, User> users;
 
-    // Регистрируем нового юзера: если имя занято — отказ, иначе создаём, добавляем и сохраняем
-    public static boolean register(String username, String password) {
-        if (users.containsKey(username)) return false;  // пользователь уже есть
+    /**
+     * Konstruktor wczytujący użytkowników z pliku JSON do pamięci.
+     */
+    public UserStorage() {
+        users = loadUsers();
+    }
+
+    /**
+     * Rejestruje nowego użytkownika, jeśli nie istnieje.
+     */
+    public boolean register(String username, String password) {
+        if (users.containsKey(username)) return false;
         User user = new User(username, password);
         users.put(username, user);
-        saveUsers();  // обновляем файл
+        saveUsers();
         return true;
     }
 
-    // Логиним пользователя: берём из памяти, проверяем пароль
-    public static User login(String username, String password) {
+    /**
+     * Loguje użytkownika na podstawie podanych danych.
+     */
+    public User login(String username, String password) {
         User user = users.get(username);
         if (user != null && user.getPassword().equals(password)) return user;
         return null;
     }
 
-    // Получаем пользователя из памяти по имени
-    public static User getUser(String username) {
+    /**
+     * Zwraca obiekt użytkownika na podstawie nazwy.
+     */
+    public User getUser(String username) {
         return users.get(username);
     }
 
-    // Сохраняем всех пользователей в файл в виде JSON-объекта с ключами — username
-    // Формат: { "user1": {...}, "user2": {...} }
-    public static void saveUsers() {
+    /**
+     * Zapisuje wszystkich użytkowników do pliku JSON.
+     */
+    public void saveUsers() {
         JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
         for (User user : users.values()) {
             JsonObjectBuilder userJson = Json.createObjectBuilder()
@@ -66,11 +88,10 @@ public class UserStorage {
         }
     }
 
-    // Перевод денег между пользователями
-    // Проверяем сумму, что оба пользователя есть, что у отправителя достаточно денег
-    // Меняем балансы, добавляем запись в историю, сохраняем изменения в файл
-    // Синхронизируем доступ, чтобы избежать проблем при параллельных переводах
-    public static boolean transfer(String fromUsername, String toUsername, double amount) {
+    /**
+     * Przesyła środki między użytkownikami jako transfer z historią.
+     */
+    public boolean transfer(String fromUsername, String toUsername, double amount) {
         if (amount <= 0) return false;
 
         User fromUser = users.get(fromUsername);
@@ -90,14 +111,60 @@ public class UserStorage {
             fromUser.addTransaction(new Transaction("TransferOut", amount, toUsername));
             toUser.addTransaction(new Transaction("TransferIn", amount, fromUsername));
 
-            saveToFile();  // сохраняем изменения
+            saveToFile();
             return true;
         }
     }
 
-    // Сохраняем всех пользователей в файл в формате JSON-массива
-    // Формат: [ {...user1...}, {...user2...} ]
-    public static void saveToFile() {
+
+    /**
+     * Dodaje środki do salda użytkownika i zapisuje transakcję.
+     */
+    public boolean deposit(String username, double amount) {
+        if (amount <= 0) return false;
+
+        User user = users.get(username);
+        if (user == null) return false;
+
+        synchronized (users) {
+            double newBalance = user.getBalance() + amount;
+            user.setBalance(newBalance);
+
+            user.getHistory().add("Deposit: +" + amount);
+            user.addTransaction(new Transaction("Deposit", amount, null));
+
+            saveToFile();
+            return true;
+        }
+    }
+
+
+    /**
+     * Odejmuje środki z salda użytkownika, jeśli wystarczające.
+     */
+    public boolean withdraw(String username, double amount) {
+        if (amount <= 0) return false;
+
+        User user = users.get(username);
+        if (user == null || user.getBalance() < amount) return false;
+
+        synchronized (users) {
+            double newBalance = user.getBalance() - amount;
+            user.setBalance(newBalance);
+
+            user.getHistory().add("Withdrawal: -" + amount);
+            user.addTransaction(new Transaction("Withdrawal", amount, null));
+
+            saveToFile();
+            return true;
+        }
+    }
+
+
+    /**
+     * Prywatna metoda zapisująca dane użytkowników do pliku JSON.
+     */
+    public void saveToFile() {
         try (FileWriter fw = new FileWriter(FILE_NAME);
              JsonWriter jsonWriter = Json.createWriter(fw)) {
 
@@ -131,7 +198,7 @@ public class UserStorage {
 
 
                 arrayBuilder.add(userJson);
-           }
+            }
 
             JsonObject rootObject = Json.createObjectBuilder()
                     .add("users", arrayBuilder)
@@ -144,15 +211,14 @@ public class UserStorage {
         }
     }
 
-    // Загружаем пользователей из файла
-    // Ожидается JSON-массив, где каждый элемент — объект пользователя с username, password, balance и history
-    // Если файла нет — возвращаем пустую коллекцию
-    public static ConcurrentHashMap<String, User> loadUsers() {
+    /**
+     * Wczytuje użytkowników z pliku JSON i odtwarza ich stan.
+     */
+    public ConcurrentHashMap<String, User> loadUsers() {
         ConcurrentHashMap<String, User> loadedUsers = new ConcurrentHashMap<>();
 
         File file = new File(FILE_NAME);
         if (!file.exists()) {
-            // Если файла нет — создаём пустой файл с валидным JSON
             try (FileWriter fw = new FileWriter(file)) {
                 fw.write("{\"users\":[]}");
             } catch (IOException e) {
@@ -196,18 +262,16 @@ public class UserStorage {
                         String targetUser = txJson.containsKey("targetUser") ? txJson.getString("targetUser") : null;
 
                         com.bank.model.Transaction tx = new com.bank.model.Transaction(type, amount, targetUser);
-                        tx.setTimestamp(timestamp);  // не забудь добавить setTimestamp() в Transaction.java
+                        tx.setTimestamp(timestamp);
 
                         user.getTransactions().add(tx);
                     }
                 }
 
 
-
                 loadedUsers.put(username, user);
             }
         } catch (Exception e) {
-            // Логируем ошибку и возвращаем пустой список, чтобы не падать
             e.printStackTrace();
         }
         return loadedUsers;

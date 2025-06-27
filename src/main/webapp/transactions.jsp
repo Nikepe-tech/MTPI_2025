@@ -1,5 +1,16 @@
+<!--
+  Strona z pełną historią transakcji użytkownika.
+  Pozwala filtrować dane według daty i typu operacji.
+-->
+
 <%@ page contentType="text/html; charset=UTF-8" %>
 <%@ page import="com.bank.model.User, com.bank.model.Transaction, java.util.List, java.util.stream.Collectors" %>
+<%@ page import="java.time.format.DateTimeFormatter, java.time.LocalDateTime" %>
+
+<%
+DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
+%>
+
 <%
     request.setCharacterEncoding("UTF-8");
     response.setCharacterEncoding("UTF-8");
@@ -11,7 +22,9 @@
         return;
     }
 
-    User user = com.bank.storage.UserStorage.getUser(username);
+    com.bank.storage.UserStorage storage = new com.bank.storage.UserStorage();
+    User user = storage.getUser(username);
+
     List<Transaction> all = user.getTransactions();
 
     String from = request.getParameter("from");
@@ -152,7 +165,7 @@
         for (Transaction t : filtered) {
     %>
     <tr>
-        <td><%= t.getTimestamp() %></td>
+        <td><%= t.getTimestamp().format(formatter) %></td>
         <td><%= t.getType() %></td>
         <td><%= t.getAmount() %></td>
         <td><%= t.getTargetUser() != null ? t.getTargetUser() : "-" %></td>

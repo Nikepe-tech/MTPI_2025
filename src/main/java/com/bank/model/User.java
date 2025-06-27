@@ -1,7 +1,10 @@
+/**
+ * Reprezentuje użytkownika systemu bankowego.
+ * Przechowuje dane logowania, saldo, historię oraz transakcje.
+ */
 package com.bank.model;
 
 import java.io.Serializable;
-import com.bank.model.Transaction;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -10,11 +13,16 @@ public class User implements Serializable {
 
     private String username;
     private String password;
-    private double balance;      // Баланс счета
+    private double balance;
     private List<Transaction> transactions = new ArrayList<>();
-    private List<String> history; // История операций
+    private List<String> history;
 
-    // Конструктор — создает пользователя с нулевым балансом и пустой историей
+    /**
+     * Tworzy nowego użytkownika z początkowym saldem 0.
+     *
+     * @param username Nazwa użytkownika
+     * @param password Hasło użytkownika
+     */
     public User(String username, String password) {
         this.username = username;
         this.password = password;
@@ -22,36 +30,52 @@ public class User implements Serializable {
         this.history = new ArrayList<>();
     }
 
-    // Метод для снятия денег
-    public boolean withdraw(double amount) {
-        if (amount > 0 && balance >= amount) {
-            balance -= amount;
-            history.add("Withdrawal: -" + amount); // Добавляем в историю операцию снятия
-            transactions.add(new Transaction("Withdrawal", amount, null));
-            return true;
-        }
-        return false; // Если сумма неверная или недостаточно средств
-    }
-
-    // Метод для внесения денег
-    public void deposit(double amount) {
-        this.balance += amount;
-        history.add("Deposit: +" + amount); // Добавляем в историю операцию пополнения
-        transactions.add(new Transaction("Deposit", amount, null));
-    }
-
+    /**
+     * Dodaje nową transakcję do listy użytkownika.
+     */
     public void addTransaction(Transaction transaction) {
         transactions.add(transaction);
     }
 
+    /**
+     * Zwraca nazwę użytkownika.
+     */
+    public String getUsername() {
+        return username;
+    }
 
+    /**
+     * Zwraca hasło użytkownika.
+     */
+    public String getPassword() {
+        return password;
+    }
 
+    /**
+     * Zwraca aktualne saldo użytkownika.
+     */
+    public double getBalance() {
+        return balance;
+    }
 
-    // Геттеры и сеттеры
-    public String getUsername() { return username; }
-    public String getPassword() { return password; }
-    public double getBalance() { return balance; }
-    public List<Transaction> getTransactions() {return transactions; }
-    public List<String> getHistory() { return history; }
-    public void setBalance(double balance) { this.balance = balance; }
+    /**
+     * Zwraca szczegółową listę transakcji użytkownika.
+     */
+    public List<Transaction> getTransactions() {
+        return transactions;
+    }
+
+    /**
+     * Zwraca historię operacji użytkownika jako tekst.
+     */
+    public List<String> getHistory() {
+        return history;
+    }
+
+    /**
+     * Ustawia nowe saldo użytkownika.
+     */
+    public void setBalance(double balance) {
+        this.balance = balance;
+    }
 }

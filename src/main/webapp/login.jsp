@@ -1,3 +1,8 @@
+<!--
+  Formularz logowania użytkownika do systemu.
+  Po zalogowaniu przekierowuje do strony głównej.
+-->
+
 <%@ page contentType="text/html; charset=UTF-8" %>
 <%
     request.setCharacterEncoding("UTF-8");

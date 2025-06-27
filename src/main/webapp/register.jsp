@@ -1,3 +1,8 @@
+<!--
+  Formularz rejestracji nowego użytkownika.
+  Tworzy konto i przekierowuje na stronę logowania.
+-->
+
 <%@ page contentType="text/html; charset=UTF-8" %>
 <%
     request.setCharacterEncoding("UTF-8");

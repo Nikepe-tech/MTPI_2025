@@ -1,3 +1,7 @@
+/**
+ * Servlet obsługujący stronę główną użytkownika.
+ * Wczytuje dane konta i przekazuje je do widoku JSP.
+ */
 package com.bank.servlet;
 
 import com.bank.model.User;
@@ -12,20 +16,29 @@ import java.io.IOException;
 
 @WebServlet("/home")
 public class HomeServlet extends HttpServlet {
-    // Выводит информацию о балансе и истории операций
-
+    /**
+     * Obsługuje żądanie GET dla strony głównej.
+     * Pobiera saldo i historię transakcji użytkownika.
+     */
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
+        // Pobiera nazwę użytkownika z sesji
         String username = (String) request.getSession().getAttribute("user");
         if (username == null) {
             response.sendRedirect("login.jsp");
             return;
         }
 
-        User user = UserStorage.getUser(username);
-        request.setAttribute("balance", user.getBalance());     // Передаем баланс в JSP
-        request.setAttribute("history", user.getHistory());     // Передаем историю операций
+        // Pobiera dane użytkownika z systemu
+        UserStorage storage = new UserStorage();
+        User user = storage.getUser(username);
+
+        // Przekazuje dane do widoku JSP
+        request.setAttribute("balance", user.getBalance());
+        request.setAttribute("history", user.getHistory());
+
+        // Przekierowuje do strony głównej
         request.getRequestDispatcher("home.jsp").forward(request, response);
     }
 }

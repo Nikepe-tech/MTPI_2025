@@ -1,3 +1,8 @@
+<!--
+  Strona główna użytkownika.
+  Pokazuje saldo konta, historię transakcji oraz linki do operacji (wpłata, wypłata, przelew).
+-->
+
 <%@ page contentType="text/html; charset=UTF-8" %>
 <%@ page import="com.bank.model.User, java.util.List" %>
 
@@ -12,7 +17,9 @@
         return;
     }
 
-    User user = com.bank.storage.UserStorage.getUser(username);
+    com.bank.storage.UserStorage storage = new com.bank.storage.UserStorage();
+    User user = storage.getUser(username);
+
     double balance = user.getBalance();
     List<String> history = user.getHistory();
 %>

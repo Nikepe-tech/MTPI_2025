@@ -1,3 +1,8 @@
+<!--
+  Formularz do wpłaty środków na konto.
+  Po zatwierdzeniu przekierowuje na stronę główną.
+-->
+
 <%@ page contentType="text/html; charset=UTF-8" %>
 
 <%

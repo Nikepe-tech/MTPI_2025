@@ -1,3 +1,8 @@
+<!--
+  Formularz do przelewu środków na konto innego użytkownika.
+  Wymaga nazwy odbiorcy i kwoty.
+-->
+
 <%@ page contentType="text/html; charset=UTF-8" %>
 
 <%

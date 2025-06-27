@@ -1,3 +1,7 @@
+/**
+ * Servlet obsługujący wylogowanie użytkownika.
+ * Usuwa sesję i przekierowuje na stronę logowania.
+ */
 package com.bank.servlet;
 
 import jakarta.servlet.ServletException;
@@ -10,9 +14,13 @@ import java.io.IOException;
 
 @WebServlet("/logout")
 public class LogoutServlet extends HttpServlet {
+    /**
+     * Obsługuje żądanie GET wylogowania.
+     * Inwaliduje sesję i kieruje na login.jsp.
+     */
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        request.getSession().invalidate();  // Уничтожаем сессию
-        response.sendRedirect("login.jsp"); // Редирект на страницу логина
+        request.getSession().invalidate();  // Usuwa sesję użytkownika
+        response.sendRedirect("login.jsp"); // Przekierowanie na stronę logowania
     }
 }
